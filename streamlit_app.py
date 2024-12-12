@@ -66,8 +66,11 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
         if model_type in ["KNN", "ANN", "SVM"]:
             # Extract features for non-CNN models
             features = extract_features(image)
-            prediction = model.predict([features])
-            probabilities = model.predict_proba([features])[0]
+            probabilities = model.predict_proba([features])[0]  # Get probabilities
+            
+            # Convert probabilities to percentages
+            probabilities = [round(prob * 100, 2) for prob in probabilities]
+            prediction = [np.argmax(probabilities)]  # Get the predicted class
         elif model_type == "CNN":
             # Preprocess image for CNN
             image = image.resize((128, 128))  # Resize to match CNN input size
@@ -83,8 +86,6 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             fractured_prob = round(fractured_prob * 100, 2)
             
             probabilities = [not_fractured_prob, fractured_prob]
-            
-            # Determine prediction based on higher probability
             prediction = [0 if not_fractured_prob >= fractured_prob else 1]
         
         # Map numeric predictions to descriptive labels
