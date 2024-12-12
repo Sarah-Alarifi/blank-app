@@ -48,8 +48,8 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         # Predict probabilities
         probabilities = model.predict(image_array)[0]
 
-        # Explicitly define class labels
-        class_labels = ["Not Fractured", "Fractured"]
+        # Dynamically generate class labels based on the length of probabilities
+        class_labels = ["Class {}".format(i) for i in range(len(probabilities))]
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
