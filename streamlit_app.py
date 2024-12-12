@@ -4,7 +4,7 @@ from PIL import Image
 import streamlit as st
 import numpy as np
 import cv2  # For SIFT feature extraction
-from tensorflow.keras.models import load_model  # For CNN models
+from tensorflow.keras.models import load_model as tf_load_model  # For CNN models
 
 # Function to load a model
 def load_model(model_name: str, is_cnn: bool = False):
@@ -18,10 +18,14 @@ def load_model(model_name: str, is_cnn: bool = False):
     Returns:
         The loaded model.
     """
-    if is_cnn:
-        return load_model(model_name)  # Load TensorFlow/Keras model
-    else:
-        return joblib.load(model_name)  # Load traditional ML model
+    try:
+        if is_cnn:
+            return tf_load_model(model_name)  # Load TensorFlow/Keras model
+        else:
+            return joblib.load(model_name)  # Load traditional ML model
+    except Exception as e:
+        st.error(f"Error loading model {model_name}: {e}")
+        raise
 
 # Function to extract SIFT features
 def extract_features(img) -> np.ndarray:
@@ -112,11 +116,15 @@ try:
         "CNN (with Dropout)": "small_cnn_with_dropout.h5",
         "CNN (without Dropout)": "small_cnn_without_dropout.h5"
     }
-    selected_model_file = model_files[model_type]
+    selected_model_file = model_files.get(model_type)
+    if not selected_model_file:
+        st.error(f"Model type {model_type} is not recognized.")
+        st.stop()
+
     is_cnn = "CNN" in model_type  # Determine if the selected model is a CNN
     model = load_model(selected_model_file, is_cnn=is_cnn)
-except FileNotFoundError as e:
-    st.error(f"Missing file: {e}")
+except Exception as e:
+    st.error(f"Error loading model: {e}")
     st.stop()
 
 if image_file:
