@@ -48,8 +48,12 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         # Predict probabilities
         probabilities = model.predict(image_array)[0]
 
-        # Dynamically generate class labels based on the length of probabilities
+        # Define class labels (ensure this matches your model output)
         class_labels = ["Not Fractured", "Fractured"]
+
+        # Ensure the number of probabilities matches the number of labels
+        if len(probabilities) != len(class_labels):
+            raise ValueError("Mismatch between number of model outputs and class labels.")
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
@@ -65,6 +69,7 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
     except Exception as e:
         st.error(f"An error occurred during classification: {e}")
         return pd.DataFrame(), None
+
 
 # Streamlit app
 st.title("Bone Structure Analysis")
