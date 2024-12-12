@@ -48,17 +48,14 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         # Predict probabilities
         probabilities = model.predict(image_array)[0]
 
-        # Explicitly map probabilities to class labels
-        if len(probabilities) == 2:  # Binary classification
-            class_labels = ["Not Fractured", "Fractured"]
-        else:  # Extendable for multi-class
-            class_labels = [f"Class {i}" for i in range(len(probabilities))]
+        # Explicitly define class labels
+        class_labels = ["Not Fractured", "Fractured"]
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
             "Class": class_labels,
-            "Probability": probabilities
-        }).sort_values("Probability", ascending=False)
+            "Probability (%)": probabilities * 100  # Convert to percentage
+        }).sort_values("Probability (%)", ascending=False)
 
         # Get the top prediction
         top_prediction = prediction_df.iloc[0]["Class"]
@@ -107,7 +104,7 @@ if image_file:
         if not predictions_df.empty:
             # Display top prediction
             st.success(f'Predicted Structure: **{top_prediction}** '
-                       f'Confidence: {predictions_df.iloc[0]["Probability"]:.2%}')
+                       f'Confidence: {predictions_df.iloc[0]["Probability (%)"]:.2f}%')
 
             # Display all predictions
             st.write("Detailed Predictions:")
