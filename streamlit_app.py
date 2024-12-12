@@ -71,7 +71,7 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             # Convert probabilities to percentages
             probabilities = [round(prob * 100, 2) for prob in probabilities]
             prediction = [np.argmax(probabilities)]  # Get the predicted class
-        elif model_type == "CNN":
+        elif model_type in ["CNN with Dropout", "CNN without Dropout"]:
             # Preprocess image for CNN
             image = image.resize((128, 128))  # Resize to match CNN input size
             image_array = img_to_array(image) / 255.0  # Normalize to [0, 1]
@@ -114,7 +114,7 @@ st.write("Upload an X-ray or bone scan image to analyze the structure.")
 image_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
 # Model selection
-model_type = st.selectbox("Choose a model:", ["KNN", "ANN", "SVM", "CNN"])
+model_type = st.selectbox("Choose a model:", ["KNN", "ANN", "SVM", "CNN with Dropout", "CNN without Dropout"])
 
 # Load the selected model
 try:
@@ -122,7 +122,8 @@ try:
         "KNN": "knn_classifier.pkl",
         "ANN": "ann_classifier.pkl",
         "SVM": "svm_classifier.pkl",
-        "CNN": "cnn_with_dropoutt.h5"  # Use the trained CNN model with dropout
+        "CNN with Dropout": "cnn_with_dropoutt.h5",  # CNN model with dropout
+        "CNN without Dropout": "cnn_without_dropoutt.h5"  # CNN model without dropout
     }
     selected_model_file = model_files[model_type]
     model = load_model_file(selected_model_file)
