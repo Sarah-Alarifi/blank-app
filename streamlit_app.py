@@ -69,14 +69,14 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
     """
     try:
         image = Image.open(img).convert("RGB")
-        features = None
 
         if model_type in ["KNN", "ANN", "SVM"]:
+            # Feature extraction for traditional ML models
             features = extract_features(image)
             prediction = model.predict([features])
             probabilities = model.predict_proba([features])[0]
         elif "CNN" in model_type:
-            # Preprocess image for CNN
+            # Preprocessing for CNN models
             input_shape = model.input_shape[1:3]  # Get height and width from model input shape
             image_resized = image.resize(input_shape)  # Resize image to model's expected size
             image_array = np.array(image_resized) / 255.0  # Normalize pixel values
