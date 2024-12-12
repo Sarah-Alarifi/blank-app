@@ -4,19 +4,24 @@ from PIL import Image
 import streamlit as st
 import numpy as np
 import cv2  # For SIFT feature extraction
+from tensorflow.keras.models import load_model  # For CNN models
 
 # Function to load a model
-def load_model(model_name: str):
+def load_model(model_name: str, is_cnn: bool = False):
     """
     Load a pre-trained model.
 
     Args:
         model_name (str): Name of the model file to load.
+        is_cnn (bool): Indicates if the model is a CNN.
 
     Returns:
-        sklearn.base.BaseEstimator: The loaded model.
+        The loaded model.
     """
-    return joblib.load(model_name)
+    if is_cnn:
+        return load_model(model_name)  # Load TensorFlow/Keras model
+    else:
+        return joblib.load(model_name)  # Load traditional ML model
 
 # Function to extract SIFT features
 def extract_features(img) -> np.ndarray:
@@ -48,21 +53,26 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
     Args:
         img (bytes): The image file to classify.
         model: The pre-trained model.
-        model_type (str): The type of model (KNN, ANN, or SVM).
+        model_type (str): The type of model (KNN, ANN, SVM, or CNN).
 
     Returns:
         pd.DataFrame: A DataFrame containing predictions and their probabilities.
     """
     try:
         image = Image.open(img).convert("RGB")
-        features = extract_features(image)
+        features = None
 
-        # Predict based on the model type
-        if model_type == "KNN" or model_type == "SVM":
+        if model_type in ["KNN", "ANN", "SVM"]:
+            features = extract_features(image)
             prediction = model.predict([features])
-            probabilities = model.predict_proba([features])[0]  # Class probabilities
-        elif model_type == "ANN":
-            probabilities = model.predict_proba([features])[0]  # For ANN
+            probabilities = model.predict_proba([features])[0]
+        elif "CNN" in model_type:
+            # Preprocess image for CNN
+            image_resized = image.resize((224, 224))  # Resize to match input size of CNN
+            image_array = np.array(image_resized) / 255.0  # Normalize pixel values
+            image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
+
+            probabilities = model.predict(image_array)[0]  # Predict probabilities
             prediction = [np.argmax(probabilities)]  # Get class with highest probability
 
         # Map numeric predictions to descriptive labels
@@ -70,7 +80,7 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             0: "Not Fractured",
             1: "Fractured"
         }
-        class_labels = [LABEL_MAPPING[cls] for cls in model.classes_]
+        class_labels = list(LABEL_MAPPING.values())
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
@@ -91,17 +101,20 @@ st.write("Upload an X-ray or bone scan image to analyze the structure.")
 image_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
 # Model selection
-model_type = st.selectbox("Choose a model:", ["KNN", "ANN", "SVM"])
+model_type = st.selectbox("Choose a model:", ["KNN", "ANN", "SVM", "CNN (with Dropout)", "CNN (without Dropout)"])
 
 # Load the selected model
 try:
     model_files = {
         "KNN": "knn_classifier.pkl",
         "ANN": "ann_classifier.pkl",
-        "SVM": "svm_classifier.pkl"
+        "SVM": "svm_classifier.pkl",
+        "CNN (with Dropout)": "small_cnn_with_dropout.h5",
+        "CNN (without Dropout)": "small_cnn_without_dropout.h5"
     }
     selected_model_file = model_files[model_type]
-    model = load_model(selected_model_file)
+    is_cnn = "CNN" in model_type  # Determine if the selected model is a CNN
+    model = load_model(selected_model_file, is_cnn=is_cnn)
 except FileNotFoundError as e:
     st.error(f"Missing file: {e}")
     st.stop()
