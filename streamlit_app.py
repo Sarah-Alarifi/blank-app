@@ -75,13 +75,17 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
             
             # Get the probability of "Not Fractured"
-            not_fractured_prob = model.predict(image_array)[0][0]  # Ensure scalar extraction
-            not_fractured_prob = not_fractured_prob * 100  # Convert to percentage
-            fractured_prob = 100 - not_fractured_prob  # Calculate "Fractured" probability
+            not_fractured_prob = model.predict(image_array)[0][0]  # Scalar probability
+            fractured_prob = 1 - not_fractured_prob  # Complementary probability
+            
+            # Convert to percentages
+            not_fractured_prob = round(not_fractured_prob * 100, 2)
+            fractured_prob = round(fractured_prob * 100, 2)
+            
             probabilities = [not_fractured_prob, fractured_prob]
             
             # Determine prediction based on higher probability
-            prediction = [0 if probabilities[0] >= probabilities[1] else 1]
+            prediction = [0 if not_fractured_prob >= fractured_prob else 1]
         
         # Map numeric predictions to descriptive labels
         LABEL_MAPPING = {
@@ -93,13 +97,14 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
             "Class": class_labels,
-            "Probability": probabilities
+            "Probability (%)": probabilities
         })
-        return prediction_df.sort_values("Probability", ascending=False), LABEL_MAPPING[prediction[0]]
+        return prediction_df.sort_values("Probability (%)", ascending=False), LABEL_MAPPING[prediction[0]]
 
     except Exception as e:
         st.error(f"An error occurred during classification: {e}")
         return pd.DataFrame(), None
+
 
 
 
