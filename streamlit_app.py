@@ -4,7 +4,7 @@ import streamlit as st
 import numpy as np
 from tensorflow.keras.models import load_model as tf_load_model  # For CNN models
 
-# Function to load a model
+# Function to load a CNN model
 def load_model(model_name: str):
     """
     Load a pre-trained CNN model.
@@ -48,16 +48,16 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         probabilities = model.predict(image_array)[0]
         prediction = np.argmax(probabilities)  # Get class with highest probability
 
-        # Map numeric predictions to descriptive labels
-        LABEL_MAPPING = {
-            0: "Not Fractured",
-            1: "Fractured"
-        }
-        class_labels = list(LABEL_MAPPING.values())
+        # Define labels dynamically based on the model's output
+        num_classes = len(probabilities)
+        if num_classes == 2:
+            LABEL_MAPPING = {0: "Not Fractured", 1: "Fractured"}
+        else:
+            LABEL_MAPPING = {i: f"Class {i}" for i in range(num_classes)}
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
-            "Class": class_labels,
+            "Class": list(LABEL_MAPPING.values()),
             "Probability": probabilities
         })
 
