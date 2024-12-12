@@ -75,9 +75,10 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
             
             # Get the probability of "Not Fractured"
-            not_fractured_prob = model.predict(image_array)[0][0]
-            fractured_prob = 100 - (not_fractured_prob * 100)  # Calculate "Fractured" probability
-            probabilities = [not_fractured_prob * 100, fractured_prob]  # Convert to percentages
+            not_fractured_prob = model.predict(image_array)[0][0]  # Ensure scalar extraction
+            not_fractured_prob = not_fractured_prob * 100  # Convert to percentage
+            fractured_prob = 100 - not_fractured_prob  # Calculate "Fractured" probability
+            probabilities = [not_fractured_prob, fractured_prob]
             
             # Determine prediction based on higher probability
             prediction = [0 if probabilities[0] >= probabilities[1] else 1]
@@ -99,6 +100,7 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
     except Exception as e:
         st.error(f"An error occurred during classification: {e}")
         return pd.DataFrame(), None
+
 
 
 # Streamlit app
