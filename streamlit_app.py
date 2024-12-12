@@ -35,6 +35,7 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: A DataFrame containing predictions and their probabilities.
+        str: The top predicted class.
     """
     try:
         # Load and preprocess the image
@@ -46,7 +47,6 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
 
         # Predict probabilities
         probabilities = model.predict(image_array)[0]
-        prediction = np.argmax(probabilities)  # Get class with highest probability
 
         # Define labels dynamically based on the model's output
         num_classes = len(probabilities)
@@ -59,9 +59,12 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         prediction_df = pd.DataFrame({
             "Class": list(LABEL_MAPPING.values()),
             "Probability": probabilities
-        })
+        }).sort_values("Probability", ascending=False)
 
-        return prediction_df.sort_values("Probability", ascending=False), LABEL_MAPPING[prediction]
+        # Get the top prediction
+        top_prediction = prediction_df.iloc[0]["Class"]
+
+        return prediction_df, top_prediction
 
     except Exception as e:
         st.error(f"An error occurred during classification: {e}")
