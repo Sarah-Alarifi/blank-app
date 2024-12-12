@@ -48,12 +48,11 @@ def classify_image(img: bytes, model) -> pd.DataFrame:
         # Predict probabilities
         probabilities = model.predict(image_array)[0]
 
-        # Dynamically map class labels based on the number of probabilities
-        num_classes = len(probabilities)
-        if num_classes == 2:  # Binary classification
+        # Explicitly map probabilities to class labels
+        if len(probabilities) == 2:  # Binary classification
             class_labels = ["Not Fractured", "Fractured"]
-        else:  # Multi-class (extendable for more classes)
-            class_labels = [f"Class {i}" for i in range(num_classes)]
+        else:  # Extendable for multi-class
+            class_labels = [f"Class {i}" for i in range(len(probabilities))]
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
@@ -83,8 +82,8 @@ model_type = st.selectbox("Choose a model:", ["CNN (with Dropout)", "CNN (withou
 # Load the selected model
 try:
     model_files = {
-        "CNN (with Dropout)": "small_cnn_with_dropout.h5",
-        "CNN (without Dropout)": "sma;;_cnn_without_dropout.h5"
+        "CNN (with Dropout)": "cnn_with_dropoutt.h5",
+        "CNN (without Dropout)": "cnn_without_dropoutt.h5"
     }
     selected_model_file = model_files.get(model_type)
     if not selected_model_file:
