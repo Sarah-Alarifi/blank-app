@@ -3,11 +3,11 @@ import pandas as pd
 from PIL import Image
 import streamlit as st
 import numpy as np
-import cv2  # For SIFT feature extraction
-from tensorflow.keras.models import load_model as tf_load_model  # For CNN models
+from tensorflow.keras.models import load_model  # For CNN models
+from tensorflow.keras.preprocessing.image import img_to_array
 
 # Function to load a model
-def load_model(model_name: str, is_cnn: bool = False):
+def load_model_file(model_name: str, is_cnn: bool = False):
     """
     Load a pre-trained model.
 
@@ -20,7 +20,7 @@ def load_model(model_name: str, is_cnn: bool = False):
     """
     try:
         if is_cnn:
-            model = tf_load_model(model_name)  # Load TensorFlow/Keras model
+            model = load_model(model_name)  # Load TensorFlow/Keras model
             print(f"Loaded CNN Model: {model_name}")
             print(f"Model Input Shape: {model.input_shape}")  # Check model input shape
             return model
@@ -31,29 +31,6 @@ def load_model(model_name: str, is_cnn: bool = False):
     except Exception as e:
         st.error(f"Error loading model {model_name}: {e}")
         raise
-
-
-# Function to extract SIFT features
-def extract_features(img) -> np.ndarray:
-    """
-    Extract features from the image using SIFT.
-
-    Args:
-        img (PIL.Image): The input image.
-
-    Returns:
-        np.ndarray: Feature vector of fixed size (128).
-    """
-    image_cv = np.array(img)
-    image_cv = cv2.cvtColor(image_cv, cv2.COLOR_RGB2GRAY)  # Convert to grayscale
-
-    sift = cv2.SIFT_create()
-    keypoints, descriptors = sift.detectAndCompute(image_cv, None)
-
-    if descriptors is not None:
-        return descriptors.flatten()[:128]  # Truncate/pad to fixed size
-    else:
-        return np.zeros(128)  # Zero vector if no features are found
 
 # Function to preprocess and classify an image
 def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
@@ -70,20 +47,19 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
     """
     try:
         image = Image.open(img).convert("RGB")
-        features = None
-
-        if model_type in ["KNN", "ANN", "SVM"]:
-            features = extract_features(image)
-            prediction = model.predict([features])
-            probabilities = model.predict_proba([features])[0]
-        elif "CNN" in model_type:
-            # Preprocess image for CNN
-            image_resized = image.resize((224, 224))  # Resize to match input size of CNN
-            image_array = np.array(image_resized) / 255.0  # Normalize pixel values
+        if "CNN" in model_type:
+            # Preprocessing for CNN models
+            input_shape = model.input_shape[1:3]  # Get height and width from model input shape
+            image_resized = image.resize(input_shape)  # Resize image to model's expected size
+            image_array = img_to_array(image_resized) / 255.0  # Normalize pixel values
             image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
 
             probabilities = model.predict(image_array)[0]  # Predict probabilities
             prediction = [np.argmax(probabilities)]  # Get class with highest probability
+        else:
+            # Preprocessing for traditional ML models
+            st.error("Only CNN models are supported in this version.")
+            return pd.DataFrame(), None
 
         # Map numeric predictions to descriptive labels
         LABEL_MAPPING = {
@@ -111,16 +87,13 @@ st.write("Upload an X-ray or bone scan image to analyze the structure.")
 image_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
 # Model selection
-model_type = st.selectbox("Choose a model:", ["KNN", "ANN", "SVM", "CNN (with Dropout)", "CNN (without Dropout)"])
+model_type = st.selectbox("Choose a model:", ["CNN (with Dropout)", "CNN (without Dropout)"])
 
 # Load the selected model
 try:
     model_files = {
-        "KNN": "knn_classifier.pkl",
-        "ANN": "ann_classifier.pkl",
-        "SVM": "svm_classifier.pkl",
-        "CNN (with Dropout)": "small_cnn_with_dropout.h5",
-        "CNN (without Dropout)": "small_cnn_without_dropout.h5"
+        "CNN (with Dropout)": "cnn_with_dropoutt.h5",
+        "CNN (without Dropout)": "cnn_without_dropoutt.h5"
     }
     selected_model_file = model_files.get(model_type)
     if not selected_model_file:
@@ -128,7 +101,7 @@ try:
         st.stop()
 
     is_cnn = "CNN" in model_type  # Determine if the selected model is a CNN
-    model = load_model(selected_model_file, is_cnn=is_cnn)
+    model = load_model_file(selected_model_file, is_cnn=is_cnn)
 except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
