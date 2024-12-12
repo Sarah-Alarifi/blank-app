@@ -83,8 +83,8 @@ model_type = st.selectbox("Choose a model:", ["CNN (with Dropout)", "CNN (withou
 # Load the selected model
 try:
     model_files = {
-        "CNN (with Dropout)": "cnn_with_dropoutt.h5",
-        "CNN (without Dropout)": "cnn_without_dropoutt.h5"
+        "CNN (with Dropout)": "small_cnn_with_dropout.h5",
+        "CNN (without Dropout)": "sma;;_cnn_without_dropout.h5"
     }
     selected_model_file = model_files.get(model_type)
     if not selected_model_file:
