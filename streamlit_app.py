@@ -20,12 +20,18 @@ def load_model(model_name: str, is_cnn: bool = False):
     """
     try:
         if is_cnn:
-            return tf_load_model(model_name)  # Load TensorFlow/Keras model
+            model = tf_load_model(model_name)  # Load TensorFlow/Keras model
+            print(f"Loaded CNN Model: {model_name}")
+            print(f"Model Input Shape: {model.input_shape}")  # Check model input shape
+            return model
         else:
-            return joblib.load(model_name)  # Load traditional ML model
+            model = joblib.load(model_name)  # Load traditional ML model
+            print(f"Loaded Traditional ML Model: {model_name}")
+            return model
     except Exception as e:
         st.error(f"Error loading model {model_name}: {e}")
         raise
+
 
 # Function to extract SIFT features
 def extract_features(img) -> np.ndarray:
