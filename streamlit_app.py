@@ -105,9 +105,6 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
         st.error(f"An error occurred during classification: {e}")
         return pd.DataFrame(), None
 
-
-
-
 # Streamlit app
 st.title("Bone Structure Analysis")
 st.write("Upload an X-ray or bone scan image to analyze the structure.")
@@ -143,7 +140,7 @@ if image_file:
         if not predictions_df.empty:
             # Display top prediction
             st.success(f'Predicted Structure: **{top_prediction}** '
-                       f'Confidence: {predictions_df.iloc[0]["Probability"]:.2%}')
+                       f'Confidence: {predictions_df.iloc[0]["Probability (%)"]:.2f}%')
 
             # Display all predictions
             st.write("Detailed Predictions:")
