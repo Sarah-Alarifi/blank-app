@@ -73,15 +73,21 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
             image = image.resize((128, 128))  # Resize to match CNN input size
             image_array = img_to_array(image) / 255.0  # Normalize to [0, 1]
             image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
-            probabilities = model.predict(image_array)[0]
-            prediction = [1 if probabilities > 0.5 else 0]
-
+            
+            # Get the probability of "Not Fractured"
+            not_fractured_prob = model.predict(image_array)[0][0]
+            fractured_prob = 100 - (not_fractured_prob * 100)  # Calculate "Fractured" probability
+            probabilities = [not_fractured_prob * 100, fractured_prob]  # Convert to percentages
+            
+            # Determine prediction based on higher probability
+            prediction = [0 if probabilities[0] >= probabilities[1] else 1]
+        
         # Map numeric predictions to descriptive labels
         LABEL_MAPPING = {
             0: "Not Fractured",
             1: "Fractured"
         }
-        class_labels = [LABEL_MAPPING[i] for i in range(len(probabilities))]
+        class_labels = ["Not Fractured", "Fractured"]
 
         # Create a DataFrame to store predictions and probabilities
         prediction_df = pd.DataFrame({
@@ -93,6 +99,7 @@ def classify_image(img: bytes, model, model_type: str) -> pd.DataFrame:
     except Exception as e:
         st.error(f"An error occurred during classification: {e}")
         return pd.DataFrame(), None
+
 
 # Streamlit app
 st.title("Bone Structure Analysis")
